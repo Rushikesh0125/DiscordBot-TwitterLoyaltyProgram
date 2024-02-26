@@ -1,0 +1,5 @@
+Lib
+.env
+__pycache__/
+pyvenv.cfg
+src/account.txt
