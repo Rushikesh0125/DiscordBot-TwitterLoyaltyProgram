@@ -1,14 +1,20 @@
 import discord
-import asyncio
+import os
+import time
+import discord.ext.tasks as tasks
 from discord.ext import commands
 from discord.ui import Button, View, MentionableSelect
 from discord import Message
 from dotenv import load_dotenv
 from DB.verifyClaims import has_claimed
 from DB.postTwitterUsername import postTweeterUsername
+from DB.getLeaderBoard import getLeaders
 from utils.allotPoints import allotPointsToInteraction
 from DB.getTweetUsername import getTweeterUsername
-import os
+from utils.getCommentedUser import getCommentingUsers
+from utils.getLikingUsers import getLikingUsers
+from utils.getRetweeters import getRetweetingUsers
+from DB.getDiscordUsername import getDiscordUsername
 
 load_dotenv()
 
@@ -37,7 +43,73 @@ async def addTweet(ctx, title:str, tweetId:str, description:str, imgUrl:str):
     view.add_item(commentButton)
     view.add_item(rtButton)
 
+    allotLikePoints.start(ctx=ctx,tweetId=tweetId)
+    allotCommentPoints.start(ctx=ctx,tweetId=tweetId)
+    allotRTPoints.start(ctx=ctx,tweetId=tweetId)
+
     await ctx.send("A New Tweet out now, LFG raid it",embed=embedMsg,view=view)
+
+
+@tasks.loop(hours=5, count=2)
+async def allotLikePoints(ctx, tweetId):
+    likingUsersList = await getLikingUsers(tweetId=tweetId)
+    for user in likingUsersList:
+        discUsername = await getDiscordUsername(user)
+        if(discUsername == None):
+                continue
+        if(await has_claimed(username=discUsername, tweet_id=tweetId, interaction=0) == False):
+            await allotPointsToInteraction(0, tweetId=tweetId, username=user , discord=discUsername)
+
+@allotLikePoints.before_loop()
+async def beforeAllotPoints():
+    await time.sleep(900)
+            
+
+@tasks.loop(hours=5, count=2)
+async def allotCommentPoints(ctx, tweetId):
+    commentedUsersList = await getCommentingUsers(tweetId=tweetId)
+    for user in commentedUsersList:
+        discUsername = await getDiscordUsername(user)
+        if(discUsername == None):
+                continue
+        if(await has_claimed(username=discUsername, tweet_id=tweetId, interaction=1) == False):
+            await allotPointsToInteraction(1, tweetId=tweetId, username=user , discord=discUsername)
+
+@allotCommentPoints.before_loop()
+async def beforeAllotPoints():
+    await time.sleep(900)
+    
+
+@tasks.loop(hours=5, count=2)
+async def allotRTPoints(ctx, tweetId):
+    retweetedUsersList = await getRetweetingUsers(tweetId=tweetId)
+    for user in retweetedUsersList:
+        discUsername = await getDiscordUsername(user)
+        if(discUsername == None):
+                continue
+        if(await has_claimed(username=discUsername, tweet_id=tweetId, interaction=2) == False):
+            await allotPointsToInteraction(2, tweetId=tweetId, username=user , discord=discUsername)
+
+@allotRTPoints.before_loop()
+async def beforeAllotPoints():
+    await time.sleep(900)
+    
+@bot.command()
+async def displayleaderBoard(ctx):
+    leaders = await getLeaders()
+    embedMsg = discord.Embed(
+        title="LeaderBoard", 
+        description="Top 5 users with most points", 
+        color=discord.Color.red()
+    )
+    if leaders:
+        # Iterate over the leaders list and add each user's information to the description
+        for index, user in enumerate(leaders, start=1):
+            embedMsg.description += f"\n{index}. {user['discUsername']} - Points: {user['points']}"  
+    else:
+        embedMsg.description = "No leaders found."
+    await ctx.send(embed=embedMsg)
+
 
 @bot.command()
 async def openClaims(ctx, tweetId):

@@ -13,7 +13,7 @@ async def getRetweetingUsers(tweetId) :
     api = API()
 
     await api.pool.add_account(os.getenv("USER1"), os.getenv("USER_PASS1"), os.getenv("EMAIL1"), os.getenv("EMAIL_PASS1"))
-    await api.pool.add_account(os.getenv("USER2"), os.getenv("USER_PASS2"), os.getenv("EMAIL2"), os.getenv("EMAIL_PASS2"));
+    # await api.pool.add_account(os.getenv("USER2"), os.getenv("USER_PASS2"), os.getenv("EMAIL2"), os.getenv("EMAIL_PASS2"));
     await api.pool.login_all()
 
     retweeters = await gather(api.retweeters(tweetId, limit=20))

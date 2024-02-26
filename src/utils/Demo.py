@@ -20,10 +20,10 @@ async def main():
     # API USAGE
 
     # tweet info
-    tweet_id = "1760927186444288442"
-    likes = await gather(api.favoriters(tweet_id, limit=500))  # list[User]
-    for user in likes:
-        print(user.id, user.username)
+    # tweet_id = "1760927186444288442"
+    # likes = await gather(api.favoriters(tweet_id, limit=500))  # list[User]
+    # for user in likes:
+    #     print(user.id, user.username)
 
     # Note: this method have small pagination from X side, like 5 tweets per query
     # await gather(api.tweet_replies(tweet_id, limit=20))  # list[Tweet]
